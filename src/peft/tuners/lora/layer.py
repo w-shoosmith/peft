@@ -297,6 +297,7 @@ class Linear(nn.Linear, LoraLayer):
         # return output_tensor
 
         if not self.merged and adapter in self.active_adapters:
+            print("AA_transpose method occurring")
             # Calculate delta weight if the adapter is active and not merged
             output_tensor = transpose(weight_A) * self.scaling[adapter]
 
