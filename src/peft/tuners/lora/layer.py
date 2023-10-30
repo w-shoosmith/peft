@@ -294,6 +294,15 @@ class Linear(nn.Linear, LoraLayer):
             self.lora_A[adapter].weight.data = weight_A.to(dtype)
             self.lora_B[adapter].weight.data = weight_B.to(dtype)
 
+        # return output_tensor
+
+        if not self.merged and adapter in self.active_adapters:
+            # Calculate delta weight if the adapter is active and not merged
+            output_tensor = transpose(weight_A) * self.scaling[adapter]
+
+            # Update lora_B as the transpose of lora_A
+            self.lora_B[adapter].weight.data = output_tensor
+
         return output_tensor
 
     def _linear(self, input: torch.Tensor) -> torch.Tensor:
