@@ -1085,6 +1085,8 @@ if is_bnb_available():
                         )
                         * self.scaling[self.active_adapter]
                     )
+                print(result.shape)
+                print(output.shape)
                 result = result.narrow(2, 0, 384) + output
             return result
 
