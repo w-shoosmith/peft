@@ -818,6 +818,7 @@ class Linear(nn.Linear, LoraLayer):
             result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
 
             x = x.to(self.lora_A[self.active_adapter].weight.dtype)
+            print(result.shape)
 
             result += (
                 self.lora_B[self.active_adapter](
