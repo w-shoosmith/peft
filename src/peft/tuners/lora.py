@@ -819,6 +819,9 @@ class Linear(nn.Linear, LoraLayer):
 
             x = x.to(self.lora_A[self.active_adapter].weight.dtype)
             print(result.shape)
+            print(self.lora_B[self.active_adapter](
+                    self.lora_A[self.active_adapter](self.lora_dropout[self.active_adapter](x))
+                ).shape)
 
             result += (
                 self.lora_B[self.active_adapter](
