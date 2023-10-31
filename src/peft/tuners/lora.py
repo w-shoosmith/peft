@@ -273,7 +273,7 @@ class LoraModel(torch.nn.Module):
         elif isinstance(target, torch.nn.Embedding):
             embedding_kwargs = kwargs.copy()
             embedding_kwargs.pop("fan_in_fan_out", None)
-            in_features, in_features = target.num_embeddings, target.embedding_dim
+            in_features, out_features = target.num_embeddings, target.embedding_dim
             new_module = Embedding(adapter_name, in_features, in_features, **embedding_kwargs)
         elif isinstance(target, torch.nn.Conv2d):
             out_channels, in_channels = target.weight.size()[:2]
@@ -283,7 +283,7 @@ class LoraModel(torch.nn.Module):
             new_module = Conv2d(adapter_name, in_channels, out_channels, kernel_size, stride, padding, **kwargs)
         else:
             if isinstance(target, torch.nn.Linear):
-                in_features, in_features = target.in_features, target.in_features
+                in_features, out_features = target.in_features, target.out_features
                 if kwargs["fan_in_fan_out"]:
                     warnings.warn(
                         "fan_in_fan_out is set to True but the target module is `torch.nn.Linear`. "
@@ -291,7 +291,7 @@ class LoraModel(torch.nn.Module):
                     )
                     kwargs["fan_in_fan_out"] = lora_config.fan_in_fan_out = False
             elif isinstance(target, Conv1D):
-                in_features, in_features = (
+                in_features, out_features = (
                     target.weight.ds_shape if hasattr(target.weight, "ds_shape") else target.weight.shape
                 )
                 kwargs["is_target_conv_1d_layer"] = True
@@ -655,7 +655,7 @@ def mark_only_lora_as_trainable(model: nn.Module, bias: str = "none") -> None:
 
 
 class LoraLayer:
-    def __init__(self, in_features: int, in_features: int, **kwargs):
+    def __init__(self, in_features: int, out_features: int, **kwargs):
         self.r = {}
         self.lora_alpha = {}
         self.scaling = {}
@@ -669,7 +669,7 @@ class LoraLayer:
         self.merged = False
         self.disable_adapters = False
         self.in_features = in_features
-        self.in_features = in_features
+        self.out_features = out_features
         self.kwargs = kwargs
 
     def update_layer(self, adapter_name, r, lora_alpha, lora_dropout, init_lora_weights):
@@ -727,7 +727,7 @@ class LoraLayer:
         # Actual trainable parameters
         if r > 0:
             weight_A = torch.randn((r, self.in_features), dtype=self.weight.dtype, device=self.weight.device)
-            # weight_B = torch.randn((self.in_features, r), dtype=self.weight.dtype, device=self.weight.device)
+            # weight_B = torch.randn((self.out_features, r), dtype=self.weight.dtype, device=self.weight.device)
             weight_B = weight_A.T
             self.lora_embedding_A.update(nn.ParameterDict({adapter_name: nn.Parameter(weight_A)}))
             self.lora_embedding_B.update(nn.ParameterDict({adapter_name: nn.Parameter(weight_B)}))
@@ -753,7 +753,7 @@ class Linear(nn.Linear, LoraLayer):
         self,
         adapter_name: str,
         in_features: int,
-        in_features: int,
+        out_features: int,
         r: int = 0,
         lora_alpha: int = 1,
         lora_dropout: float = 0.0,
@@ -764,7 +764,7 @@ class Linear(nn.Linear, LoraLayer):
         init_lora_weights = kwargs.pop("init_lora_weights", True)
 
         nn.Linear.__init__(self, in_features, in_features, **kwargs)
-        LoraLayer.__init__(self, in_features=in_features, in_features=in_features)
+        LoraLayer.__init__(self, in_features=in_features, out_features=in_features)
         # Freezing the pre-trained weight matrix
         self.weight.requires_grad = False
 
@@ -848,7 +848,7 @@ class Embedding(nn.Embedding, LoraLayer):
         init_lora_weights = kwargs.pop("init_lora_weights", True)
 
         nn.Embedding.__init__(self, num_embeddings, embedding_dim, **kwargs)
-        LoraLayer.__init__(self, in_features=num_embeddings, in_features=embedding_dim)
+        LoraLayer.__init__(self, in_features=num_embeddings, out_features=num_embeddings)
 
         self.weight.requires_grad = False
 
@@ -920,7 +920,7 @@ class Conv2d(nn.Conv2d, LoraLayer):
         LoraLayer.__init__(
             self,
             in_features=in_channels,
-            in_features=out_channels,
+            out_features=in_channels,
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
@@ -1037,7 +1037,7 @@ if is_bnb_available():
             self,
             adapter_name,
             in_features,
-            in_features,
+            out_features,
             r: int = 0,
             lora_alpha: int = 1,
             lora_dropout: float = 0.0,
@@ -1046,14 +1046,14 @@ if is_bnb_available():
             bnb.nn.Linear8bitLt.__init__(
                 self,
                 in_features,
-                in_features,
+                out_features,
                 bias=kwargs.get("bias", True),
                 has_fp16_weights=kwargs.get("has_fp16_weights", True),
                 memory_efficient_backward=kwargs.get("memory_efficient_backward", False),
                 threshold=kwargs.get("threshold", 0.0),
                 index=kwargs.get("index", None),
             )
-            LoraLayer.__init__(self, in_features=in_features, in_features=in_features)
+            LoraLayer.__init__(self, in_features=in_features, out_features=in_features)
 
             # Freezing the pre-trained weight matrix
             self.weight.requires_grad = False
@@ -1096,7 +1096,7 @@ if is_bnb_available():
                 self,
                 adapter_name,
                 in_features,
-                in_features,
+                out_features,
                 r: int = 0,
                 lora_alpha: int = 1,
                 lora_dropout: float = 0.0,
@@ -1105,13 +1105,13 @@ if is_bnb_available():
                 bnb.nn.Linear4bit.__init__(
                     self,
                     in_features,
-                    in_features,
+                    out_features,
                     bias=kwargs.get("bias", True),
                     compute_dtype=kwargs.get("compute_dtype", torch.float32),
                     compress_statistics=kwargs.get("compress_statistics", True),
                     quant_type=kwargs.get("quant_type", "nf4"),
                 )
-                LoraLayer.__init__(self, in_features=in_features, in_features=in_features)
+                LoraLayer.__init__(self, in_features=in_features, out_features=in_features)
 
                 # Freezing the pre-trained weight matrix
                 self.weight.requires_grad = False
