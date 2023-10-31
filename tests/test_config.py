@@ -17,21 +17,13 @@ import os
 import pickle
 import tempfile
 import unittest
-import warnings
-
-import pytest
-from parameterized import parameterized
 
 from peft import (
-    AdaLoraConfig,
     AdaptionPromptConfig,
     IA3Config,
-    LoHaConfig,
     LoraConfig,
-    MultitaskPromptTuningConfig,
     PeftConfig,
     PrefixTuningConfig,
-    PromptEncoder,
     PromptEncoderConfig,
     PromptTuningConfig,
 )
@@ -39,22 +31,20 @@ from peft import (
 
 PEFT_MODELS_TO_TEST = [("lewtun/tiny-random-OPTForCausalLM-delta", "v1")]
 
-ALL_CONFIG_CLASSES = (
-    AdaptionPromptConfig,
-    AdaLoraConfig,
-    IA3Config,
-    LoHaConfig,
-    LoraConfig,
-    MultitaskPromptTuningConfig,
-    PrefixTuningConfig,
-    PromptEncoderConfig,
-    PromptTuningConfig,
-)
+
+class PeftConfigTestMixin:
+    all_config_classes = (
+        LoraConfig,
+        PromptEncoderConfig,
+        PrefixTuningConfig,
+        PromptTuningConfig,
+        AdaptionPromptConfig,
+        IA3Config,
+    )
 
 
-class PeftConfigTester(unittest.TestCase):
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_methods(self, config_class):
+class PeftConfigTester(unittest.TestCase, PeftConfigTestMixin):
+    def test_methods(self):
         r"""
         Test if all configs have the expected methods. Here we test
         - to_dict
@@ -63,138 +53,106 @@ class PeftConfigTester(unittest.TestCase):
         - from_json_file
         """
         # test if all configs have the expected methods
-        config = config_class()
-        self.assertTrue(hasattr(config, "to_dict"))
-        self.assertTrue(hasattr(config, "save_pretrained"))
-        self.assertTrue(hasattr(config, "from_pretrained"))
-        self.assertTrue(hasattr(config, "from_json_file"))
+        for config_class in self.all_config_classes:
+            config = config_class()
+            self.assertTrue(hasattr(config, "to_dict"))
+            self.assertTrue(hasattr(config, "save_pretrained"))
+            self.assertTrue(hasattr(config, "from_pretrained"))
+            self.assertTrue(hasattr(config, "from_json_file"))
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_task_type(self, config_class):
-        config_class(task_type="test")
+    def test_task_type(self):
+        for config_class in self.all_config_classes:
+            # assert this will not fail
+            _ = config_class(task_type="test")
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_from_pretrained(self, config_class):
+    def test_from_pretrained(self):
         r"""
         Test if the config is correctly loaded using:
         - from_pretrained
         """
-        for model_name, revision in PEFT_MODELS_TO_TEST:
-            # Test we can load config from delta
-            config_class.from_pretrained(model_name, revision=revision)
+        for config_class in self.all_config_classes:
+            for model_name, revision in PEFT_MODELS_TO_TEST:
+                # Test we can load config from delta
+                _ = config_class.from_pretrained(model_name, revision=revision)
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_save_pretrained(self, config_class):
+    def test_save_pretrained(self):
         r"""
         Test if the config is correctly saved and loaded using
         - save_pretrained
         """
-        config = config_class()
-        with tempfile.TemporaryDirectory() as tmp_dirname:
-            config.save_pretrained(tmp_dirname)
+        for config_class in self.all_config_classes:
+            config = config_class()
+            with tempfile.TemporaryDirectory() as tmp_dirname:
+                config.save_pretrained(tmp_dirname)
 
-            config_from_pretrained = config_class.from_pretrained(tmp_dirname)
-            self.assertEqual(config.to_dict(), config_from_pretrained.to_dict())
+                config_from_pretrained = config_class.from_pretrained(tmp_dirname)
+                self.assertEqual(config.to_dict(), config_from_pretrained.to_dict())
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_from_json_file(self, config_class):
-        config = config_class()
-        with tempfile.TemporaryDirectory() as tmp_dirname:
-            config.save_pretrained(tmp_dirname)
+    def test_from_json_file(self):
+        for config_class in self.all_config_classes:
+            config = config_class()
+            with tempfile.TemporaryDirectory() as tmp_dirname:
+                config.save_pretrained(tmp_dirname)
 
-            config_from_json = config_class.from_json_file(os.path.join(tmp_dirname, "adapter_config.json"))
-            self.assertEqual(config.to_dict(), config_from_json)
+                config_from_json = config_class.from_json_file(os.path.join(tmp_dirname, "adapter_config.json"))
+                self.assertEqual(config.to_dict(), config_from_json)
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_to_dict(self, config_class):
+    def test_to_dict(self):
         r"""
         Test if the config can be correctly converted to a dict using:
         - to_dict
         """
-        config = config_class()
-        self.assertTrue(isinstance(config.to_dict(), dict))
+        for config_class in self.all_config_classes:
+            config = config_class()
+            self.assertTrue(isinstance(config.to_dict(), dict))
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_from_pretrained_cache_dir(self, config_class):
+    def test_from_pretrained_cache_dir(self):
         r"""
         Test if the config is correctly loaded with extra kwargs
         """
         with tempfile.TemporaryDirectory() as tmp_dirname:
-            for model_name, revision in PEFT_MODELS_TO_TEST:
-                # Test we can load config from delta
-                config_class.from_pretrained(model_name, revision=revision, cache_dir=tmp_dirname)
+            for config_class in self.all_config_classes:
+                for model_name, revision in PEFT_MODELS_TO_TEST:
+                    # Test we can load config from delta
+                    _ = config_class.from_pretrained(model_name, revision=revision, cache_dir=tmp_dirname)
 
     def test_from_pretrained_cache_dir_remote(self):
         r"""
         Test if the config is correctly loaded with a checkpoint from the hub
         """
         with tempfile.TemporaryDirectory() as tmp_dirname:
-            PeftConfig.from_pretrained("ybelkada/test-st-lora", cache_dir=tmp_dirname)
+            _ = PeftConfig.from_pretrained("ybelkada/test-st-lora", cache_dir=tmp_dirname)
             self.assertTrue("models--ybelkada--test-st-lora" in os.listdir(tmp_dirname))
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_set_attributes(self, config_class):
+    def test_set_attributes(self):
         # manually set attributes and check if they are correctly written
-        config = config_class(peft_type="test")
+        for config_class in self.all_config_classes:
+            config = config_class(peft_type="test")
 
-        # save pretrained
-        with tempfile.TemporaryDirectory() as tmp_dirname:
-            config.save_pretrained(tmp_dirname)
+            # save pretrained
+            with tempfile.TemporaryDirectory() as tmp_dirname:
+                config.save_pretrained(tmp_dirname)
 
-            config_from_pretrained = config_class.from_pretrained(tmp_dirname)
-            self.assertEqual(config.to_dict(), config_from_pretrained.to_dict())
+                config_from_pretrained = config_class.from_pretrained(tmp_dirname)
+                self.assertEqual(config.to_dict(), config_from_pretrained.to_dict())
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_config_copy(self, config_class):
+    def test_config_copy(self):
         # see https://github.com/huggingface/peft/issues/424
-        config = config_class()
-        copied = copy.copy(config)
-        self.assertEqual(config.to_dict(), copied.to_dict())
+        for config_class in self.all_config_classes:
+            config = config_class()
+            copied = copy.copy(config)
+            self.assertEqual(config.to_dict(), copied.to_dict())
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_config_deepcopy(self, config_class):
+    def test_config_deepcopy(self):
         # see https://github.com/huggingface/peft/issues/424
-        config = config_class()
-        copied = copy.deepcopy(config)
-        self.assertEqual(config.to_dict(), copied.to_dict())
+        for config_class in self.all_config_classes:
+            config = config_class()
+            copied = copy.deepcopy(config)
+            self.assertEqual(config.to_dict(), copied.to_dict())
 
-    @parameterized.expand(ALL_CONFIG_CLASSES)
-    def test_config_pickle_roundtrip(self, config_class):
+    def test_config_pickle_roundtrip(self):
         # see https://github.com/huggingface/peft/issues/424
-        config = config_class()
-        copied = pickle.loads(pickle.dumps(config))
-        self.assertEqual(config.to_dict(), copied.to_dict())
-
-    def test_prompt_encoder_warning_num_layers(self):
-        # This test checks that if a prompt encoder config is created with an argument that is ignored, there should be
-        # warning. However, there should be no warning if the default value is used.
-        kwargs = {
-            "num_virtual_tokens": 20,
-            "num_transformer_submodules": 1,
-            "token_dim": 768,
-            "encoder_hidden_size": 768,
-        }
-
-        # there should be no warning with just default argument for encoder_num_layer
-        config = PromptEncoderConfig(**kwargs)
-        with warnings.catch_warnings():
-            PromptEncoder(config)
-
-        # when changing encoder_num_layer, there should be a warning for MLP since that value is not used
-        config = PromptEncoderConfig(encoder_num_layers=123, **kwargs)
-        with pytest.warns(UserWarning) as record:
-            PromptEncoder(config)
-        expected_msg = "for MLP, the argument `encoder_num_layers` is ignored. Exactly 2 MLP layers are used."
-        assert str(record.list[0].message) == expected_msg
-
-    @parameterized.expand([LoHaConfig, LoraConfig, IA3Config])
-    def test_save_pretrained_with_target_modules(self, config_class):
-        # See #1041, #1045
-        config = config_class(target_modules=["a", "list"])
-        with tempfile.TemporaryDirectory() as tmp_dirname:
-            config.save_pretrained(tmp_dirname)
-
-            config_from_pretrained = config_class.from_pretrained(tmp_dirname)
-            self.assertEqual(config.to_dict(), config_from_pretrained.to_dict())
-            # explicit test that target_modules should be converted to set
-            self.assertTrue(isinstance(config_from_pretrained.target_modules, set))
+        for config_class in self.all_config_classes:
+            config = config_class()
+            copied = pickle.loads(pickle.dumps(config))
+            self.assertEqual(config.to_dict(), copied.to_dict())

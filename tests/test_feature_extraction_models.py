@@ -18,8 +18,6 @@ import torch
 from parameterized import parameterized
 from transformers import AutoModel
 
-from peft import PrefixTuningConfig, PromptLearningConfig
-
 from .testing_common import PeftCommonTester, PeftTestConfigManager
 
 
@@ -34,13 +32,6 @@ FULL_GRID = {
     "model_ids": PEFT_FEATURE_EXTRACTION_MODELS_TO_TEST,
     "task_type": "FEATURE_EXTRACTION",
 }
-
-
-def skip_non_prompt_tuning(test_list):
-    """Skip tests that are not prompt tuning"""
-    return [
-        test for test in test_list if issubclass(test[2], PromptLearningConfig) and (test[2] != PrefixTuningConfig)
-    ]
 
 
 def skip_deberta_lora_tests(test_list):
@@ -151,7 +142,6 @@ class PeftFeatureExtractionModelTester(unittest.TestCase, PeftCommonTester):
             {
                 "model_ids": PEFT_FEATURE_EXTRACTION_MODELS_TO_TEST,
                 "lora_kwargs": {"init_lora_weights": [False]},
-                "adalora_kwargs": {"init_lora_weights": [False]},
                 "task_type": "FEATURE_EXTRACTION",
             },
         )
@@ -170,9 +160,3 @@ class PeftFeatureExtractionModelTester(unittest.TestCase, PeftCommonTester):
     )
     def test_weighted_combination_of_adapters(self, test_name, model_id, config_cls, config_kwargs):
         self._test_weighted_combination_of_adapters(model_id, config_cls, config_kwargs)
-
-    @parameterized.expand(
-        PeftTestConfigManager.get_grid_parameters(FULL_GRID, filter_params_func=skip_non_prompt_tuning)
-    )
-    def test_passing_input_embeds_works(self, test_name, model_id, config_cls, config_kwargs):
-        self._test_passing_input_embeds_works(test_name, model_id, config_cls, config_kwargs)

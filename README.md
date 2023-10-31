@@ -30,9 +30,7 @@ Supported methods:
 3. P-Tuning: [GPT Understands, Too](https://arxiv.org/abs/2103.10385)
 4. Prompt Tuning: [The Power of Scale for Parameter-Efficient Prompt Tuning](https://arxiv.org/abs/2104.08691)
 5. AdaLoRA: [Adaptive Budget Allocation for Parameter-Efficient Fine-Tuning](https://arxiv.org/abs/2303.10512)  
-6. $(IA)^3$: [Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper than In-Context Learning](https://arxiv.org/abs/2205.05638)
-7. MultiTask Prompt Tuning: [Multitask Prompt Tuning Enables Parameter-Efficient Transfer Learning](https://arxiv.org/abs/2303.02861)
-8. LoHa: [FedPara: Low-Rank Hadamard Product for Communication-Efficient Federated Learning](https://arxiv.org/abs/2108.06098)
+6. $(IA)^3$ : [Infused Adapter by Inhibiting and Amplifying Inner Activations](https://arxiv.org/abs/2205.05638)
 
 ## Getting started
 
@@ -57,7 +55,7 @@ model.print_trainable_parameters()
 ### Get comparable performance to full finetuning by adapting LLMs to downstream tasks using consumer hardware
 
 GPU memory required for adapting LLMs on the few-shot dataset [`ought/raft/twitter_complaints`](https://huggingface.co/datasets/ought/raft/viewer/twitter_complaints). Here, settings considered
-are full finetuning, PEFT-LoRA using plain PyTorch and PEFT-LoRA using DeepSpeed with CPU Offloading. 
+are full finetuning, PEFT-LoRA using plain PyTorch and  PEFT-LoRA using DeepSpeed with CPU Offloading. 
 
 Hardware: Single A100 80GB GPU with CPU RAM above 64GB
 
@@ -69,7 +67,7 @@ Hardware: Single A100 80GB GPU with CPU RAM above 64GB
 
 Performance of PEFT-LoRA tuned [`bigscience/T0_3B`](https://huggingface.co/bigscience/T0_3B) on [`ought/raft/twitter_complaints`](https://huggingface.co/datasets/ought/raft/viewer/twitter_complaints) leaderboard. 
 A point to note is that we didn't try to squeeze performance by playing around with input instruction templates, LoRA hyperparams and other training related hyperparams. Also, we didn't use the larger 13B [mt0-xxl](https://huggingface.co/bigscience/mt0-xxl) model.
-So, we are already seeing comparable performance to SoTA with parameter efficient tuning. Also, the final additional checkpoint size is just `19MB` in comparison to `11GB` size of the backbone [`bigscience/T0_3B`](https://huggingface.co/bigscience/T0_3B) model, but one still has to load the original full size model.
+So, we are already seeing comparable performance to SoTA with parameter efficient tuning. Also, the final checkpoint size is just `19MB` in comparison to `11GB` size of the backbone [`bigscience/T0_3B`](https://huggingface.co/bigscience/T0_3B) model.
 
 |   Submission Name        | Accuracy |
 | --------- | ---- |
@@ -134,11 +132,9 @@ Try out the 🤗 Gradio Space which should run seamlessly on a T4 instance:
 **NEW** ✨ Multi Adapter support and combining multiple LoRA adapters in a weighted combination 
 ![peft lora dreambooth weighted adapter](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/peft/weighted_adapter_dreambooth_lora.png)
 
-**NEW** ✨ Dreambooth training for Stable Diffusion using LoHa adapter [`examples/stable_diffusion/train_dreambooth_loha.py`](examples/stable_diffusion/train_dreambooth_loha.py)
-
 ### Parameter Efficient Tuning of LLMs for RLHF components such as Ranker and Policy
 - Here is an example in [trl](https://github.com/lvwerra/trl) library using PEFT+INT8 for tuning policy model: [gpt2-sentiment_peft.py](https://github.com/lvwerra/trl/blob/main/examples/sentiment/scripts/gpt2-sentiment_peft.py) and corresponding [Blog](https://huggingface.co/blog/trl-peft)
-- Example using PEFT for Instruction finetuning, reward model and policy : [stack_llama](https://github.com/lvwerra/trl/tree/main/examples/research_projects/stack_llama/scripts) and corresponding [Blog](https://huggingface.co/blog/stackllama) 
+- Example using PEFT for Instrction finetuning, reward model and policy : [stack_llama](https://github.com/lvwerra/trl/tree/main/examples/stack_llama/scripts) and corresponding [Blog](https://huggingface.co/blog/stackllama) 
 
 ### INT8 training of large models in Colab using PEFT LoRA and bits_and_bytes
 
@@ -152,7 +148,7 @@ Save storage by avoiding full finetuning of models on each of the downstream tas
 With PEFT methods, users only need to store tiny checkpoints in the order of `MBs` all the while retaining 
 performance comparable to full finetuning.
 
-An example of using LoRA for the task of adapting `LayoutLMForTokenClassification` on `FUNSD` dataset is given in `~examples/token_classification/PEFT_LoRA_LayoutLMForTokenClassification_on_FUNSD.py`. We can observe that with only `0.62 %` of parameters being trainable, we achieve performance (F1 0.777) comparable to full finetuning (F1 0.786) (without any hyperparam tuning runs for extracting more performance), and the checkpoint of this is only `2.8MB`. Now, if there are `N` such datasets, just have these PEFT models one for each dataset and save a lot of storage without having to worry about the problem of catastrophic forgetting or overfitting of backbone/base model.
+An example of using LoRA for the task of adapting `LayoutLMForTokenClassification` on `FUNSD` dataset is given in `~examples/token_classification/PEFT_LoRA_LayoutLMForTokenClassification_on_FUNSD.py`. We can observe that with only `0.62 %` of parameters being trainable, we achieve performance (F1 0.777) comparable to full finetuning (F1 0.786) (without any hyerparam tuning runs for extracting more performance), and the checkpoint of this is only `2.8MB`. Now, if there are `N` such datasets, just have these PEFT models one for each dataset and save a lot of storage without having to worry about the problem of catastrophic forgetting or overfitting of backbone/base model.
 
 Another example is fine-tuning [`roberta-large`](https://huggingface.co/roberta-large) on [`MRPC` GLUE](https://huggingface.co/datasets/glue/viewer/mrpc) dataset using different PEFT methods. The notebooks are given in `~examples/sequence_classification`. 
 
@@ -273,9 +269,9 @@ An example is provided in `~examples/causal_language_modeling/peft_lora_clm_acce
 
 ### Text-to-Image Generation
 
-|   Model         | LoRA | LoHa | Prefix Tuning  | P-Tuning | Prompt Tuning  | IA3 |
-| --------- | ---- | ---- | ---- | ---- | ----  | ----  |
-| Stable Diffusion           | ✅  | ✅  |   |   |   |
+|   Model         | LoRA | Prefix Tuning  | P-Tuning | Prompt Tuning  | IA3 |
+| --------- | ---- | ---- | ---- | ----  | ----  |
+| Stable Diffusion           | ✅  |   |   |   |   |  
 
 
 ### Image Classification
@@ -359,45 +355,12 @@ any GPU memory savings. Please refer issue [[FSDP] FSDP with CPU offload consume
 
 2. When using ZeRO3 with zero3_init_flag=True, if you find the gpu memory increase with training steps. we might need to update deepspeed after [deepspeed commit 42858a9891422abc](https://github.com/microsoft/DeepSpeed/commit/42858a9891422abcecaa12c1bd432d28d33eb0d4) . The related issue is [[BUG] Peft Training with Zero.Init() and Zero3 will increase GPU memory every forward step ](https://github.com/microsoft/DeepSpeed/issues/3002)
 
-## 🤗 PEFT as a utility library
-
-Inject trainable adapters on any `torch` model using `inject_adapter_in_model` method. Note the method will make no further change to the model.
-
-```python
-import torch 
-from peft import inject_adapter_in_model, LoraConfig
-
-class DummyModel(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.embedding = torch.nn.Embedding(10, 10)
-        self.linear = torch.nn.Linear(10, 10)
-        self.lm_head = torch.nn.Linear(10, 10)
-    
-    def forward(self, input_ids):
-        x = self.embedding(input_ids)
-        x = self.linear(x)
-        x = self.lm_head(x)
-        return x
-
-lora_config = LoraConfig(
-    lora_alpha=16,
-    lora_dropout=0.1,
-    r=64,
-    bias="none",
-    target_modules=["linear"],
-)
-
-model = DummyModel()
-model = inject_adapter_in_model(lora_config, model)
-
-dummy_inputs = torch.LongTensor([[0, 1, 2, 3, 4, 5, 6, 7]])
-dummy_outputs = model(dummy_inputs)
-```
-
-## Contributing
-
-If you would like to contribute to PEFT, please check out our [contributing guide](https://huggingface.co/docs/peft/developer_guides/contributing).
+## Backlog:
+- [x] Add tests
+- [x] Multi Adapter training and inference support
+- [x] Add more use cases and examples
+- [x] Integrate`(IA)^3`, `AdaptionPrompt`
+- [ ] Explore and possibly integrate methods like `Bottleneck Adapters`,  ...
 
 ## Citing 🤗 PEFT
 
@@ -406,7 +369,7 @@ If you use 🤗 PEFT in your publication, please cite it by using the following 
 ```bibtex
 @Misc{peft,
   title =        {PEFT: State-of-the-art Parameter-Efficient Fine-Tuning methods},
-  author =       {Sourab Mangrulkar and Sylvain Gugger and Lysandre Debut and Younes Belkada and Sayak Paul and Benjamin Bossan},
+  author =       {Sourab Mangrulkar and Sylvain Gugger and Lysandre Debut and Younes Belkada and Sayak Paul},
   howpublished = {\url{https://github.com/huggingface/peft}},
   year =         {2022}
 }

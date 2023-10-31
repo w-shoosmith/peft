@@ -18,11 +18,11 @@ extras = {}
 extras["quality"] = ["black ~= 22.0", "ruff>=0.0.241", "urllib3<=2.0.0"]
 extras["docs_specific"] = ["hf-doc-builder"]
 extras["dev"] = extras["quality"] + extras["docs_specific"]
-extras["test"] = extras["dev"] + ["pytest", "pytest-cov", "pytest-xdist", "parameterized", "datasets", "diffusers<0.21.0"]
+extras["test"] = extras["dev"] + ["pytest", "pytest-cov", "pytest-xdist", "parameterized", "datasets", "diffusers"]
 
 setup(
     name="peft",
-    version="0.6.0.dev0",
+    version="0.4.0",
     description="Parameter-Efficient Fine-Tuning (PEFT)",
     license_files=["LICENSE"],
     long_description=open("README.md", "r", encoding="utf-8").read(),
@@ -34,7 +34,6 @@ setup(
     url="https://github.com/huggingface/peft",
     package_dir={"": "src"},
     packages=find_packages("src"),
-    package_data={"peft": ["py.typed"]},
     entry_points={},
     python_requires=">=3.8.0",
     install_requires=[
@@ -44,8 +43,7 @@ setup(
         "pyyaml",
         "torch>=1.13.0",
         "transformers",
-        "tqdm",
-        "accelerate>=0.21.0",
+        "accelerate",
         "safetensors",
     ],
     extras_require=extras,
