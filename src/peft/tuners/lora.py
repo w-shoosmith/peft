@@ -1085,7 +1085,7 @@ if is_bnb_available():
                         )
                         * self.scaling[self.active_adapter]
                     )
-                result += output
+                result += output.narrow(2, 0, 384)
             return result
 
     if is_bnb_4bit_available():
